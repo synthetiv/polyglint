@@ -33,9 +33,9 @@ root_freq = musicutil.note_num_to_freq(root_midi_note)
 -- 49/32  7*7 (for extra shimmer)
 -- 3/2    3
 -- 6/5    3*2*2/5
--- 7/6    7/3
--- 49/32  7*7/2
--- 49/48  7*7/3
+-- 7/6    7/3/2
+-- 49/32  7*7/2/2/2/2
+-- 49/48  7*7/3/2/2/2
 --
 -- another way to spell it:
 -- 3
@@ -50,6 +50,13 @@ root_freq = musicutil.note_num_to_freq(root_midi_note)
 -- and the top notes too --
 -- 49/32 over 3/2 = 49/48
 -- good old superparticulars involving factors of 7
+
+-- that one also sounds good with 7/4 and 16/9 on top:
+-- 16/9
+-- 7/4    7/2
+-- 7/6    7/3
+-- 49/32  7*7/2
+-- 49/48  7*7/3
 
 -- here's another good tone cluster:
 -- 49/32
