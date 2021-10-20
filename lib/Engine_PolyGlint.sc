@@ -42,22 +42,19 @@ Engine_PolyGlint : CroneEngine {
 
 		context.server.sync;
 
-		"glint params init'd".postln;
-
 		SynthDef.new(\glint, {
 			arg out,
 				hz = 220,
+				pan = 0,
 				gate = 0;
 			var env = EnvGen.ar(Env.asr(In.kr(ctlBus[\voiceAttack]), 1, In.kr(ctlBus[\voiceRelease])), gate, doneAction:
 			Done.freeSelf);
 			var sine = SinOscFB.ar(hz * In.kr(ctlBus[\bend]), In.kr(ctlBus[\mod]));
 			// TODO: pan voices :)
-			Out.ar(out, In.kr(ctlBus[\amp]) * env * sine ! 2);
+			Out.ar(out, In.kr(ctlBus[\amp]) * env * Pan2.ar(sine, pan));
 		}).send;
 
 		context.server.sync;
-
-		"glint synth init'd".postln;
 
 		paramSynth = Synth.new(\glintParams);
 
@@ -86,7 +83,7 @@ Engine_PolyGlint : CroneEngine {
 				if(voices[id].notNil, {
 					voices[id].set(\hz, hz);
 				}, {
-					voices.add(id -> Synth.new(\glint, [\hz, hz, \gate, 1]));
+					voices.add(id -> Synth.new(\glint, [\hz, hz]));
 					NodeWatcher.register(voices[id]);
 					voices[id].onFree({
 						voices.removeAt(id);
@@ -97,18 +94,23 @@ Engine_PolyGlint : CroneEngine {
 			});
 		});
 
-		this.addCommand(\off, "i", {
+		this.addCommand(\pan, "if", {
 			arg msg;
 			var id = msg[1];
-			var hz = msg[2];
+			var pos = msg[2];
 			if(voices[id].notNil, {
-				voices[id].set(\gate, 0);
-			}, {
-				"glint: unknown voice " ++ id.postln;
+				voices[id].set(\pan, pos);
 			})
 		});
 
-		"glint alloc'd".postln;
+		this.addCommand(\gate, "ii", {
+			arg msg;
+			var id = msg[1];
+			var state = msg[2];
+			if(voices[id].notNil, {
+				voices[id].set(\gate, state);
+			})
+		});
 	}
 
 	free {
