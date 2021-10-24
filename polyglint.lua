@@ -91,6 +91,26 @@ root_freq = musicutil.note_num_to_freq(root_midi_note)
 -- 3/2
 -- 1/1
 
+function tune_syms()
+	for n = 1, #ji_ratios do
+		for o = 1, 2 do
+			local detune = math.random() - 0.5
+			local hz = root_freq * math.pow(1.5, detune) * math.pow(2, o - 3) * ji_ratios[n]
+			local pan = (2 - o) - (n - 1) / (#ji_ratios - 1)
+			engine.sym(n + o * #ji_ratios, hz, pan)
+		end
+	end
+end
+tune_syms()
+
+function remove_syms()
+	for n = 1, #ji_ratios do
+		for o = 1, 2 do
+			engine.sym(n + o * #ji_ratios, 0, 0)
+		end
+	end
+end
+
 function init()
 	grid_clock = clock.run(function()
 		while true do
@@ -98,6 +118,8 @@ function init()
 			grid_redraw()
 		end
 	end)
+	tune_syms()
+	engine.symAmp(0.1)
 end
 
 function bend_voices(bend)
