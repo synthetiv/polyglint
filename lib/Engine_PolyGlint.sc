@@ -50,7 +50,6 @@ Engine_PolyGlint : CroneEngine {
 			var env = EnvGen.ar(Env.asr(In.kr(ctlBus[\voiceAttack]), 1, In.kr(ctlBus[\voiceRelease])), gate, doneAction:
 			Done.freeSelf);
 			var sine = SinOscFB.ar(hz * In.kr(ctlBus[\bend]), In.kr(ctlBus[\mod]));
-			// TODO: pan voices :)
 			Out.ar(out, In.kr(ctlBus[\amp]) * env * Pan2.ar(sine, pan));
 		}).send;
 
