@@ -75,8 +75,13 @@ Engine_PolyGlint : CroneEngine {
 			arg out,
 				hz = 220,
 				pan = 0;
-			var str = CombL.ar(In.ar(glintBus), 0.1, hz.reciprocal, In.kr(ctlBus[\symDecay])) * In.kr(ctlBus[\symAmp]);
-			Out.ar(out, Pan2.ar(str, pan));
+			var delay = hz.reciprocal;
+			var fbGain = -60.dbamp ** (delay / In.kr(ctlBus[\symDecay]));
+			var fbInput = fbGain * LocalIn.ar;
+			var strInput = (RLPF.ar(In.ar(glintBus) * In.kr(ctlBus[\symAmp]) + fbInput, 10000)).softclip;
+			var str = DelayL.ar(strInput, 0.1, delay - ControlDur.ir);
+			LocalOut.ar(str);
+			Out.ar(out, Pan2.ar(DelayN.ar(str, ControlDur.ir, ControlDur.ir), pan));
 		}).send;
 
 		context.server.sync;

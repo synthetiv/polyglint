@@ -89,19 +89,20 @@ root_freq = musicutil.note_num_to_freq(root_midi_note)
 -- moving the root, that makes a nice interval between a fifth and a sixth:
 -- 384/245
 -- 3/2
--- 1/1
+-- a2/1
 
 function tune_syms()
 	for n = 1, #ji_ratios do
 		for o = 1, 2 do
-			local detune = math.random() - 0.5
-			local hz = root_freq * math.pow(1.5, detune) * math.pow(2, o - 3) * ji_ratios[n]
+			local detune = 0 -- math.random() - 0.5
+			local hz = root_freq * math.pow(1.1, detune) * math.pow(2, o - 3) * ji_ratios[n]
 			local pan = (2 - o) - (n - 1) / (#ji_ratios - 1)
+			print('sym string', hz, pan)
 			engine.sym(n + o * #ji_ratios, hz, pan)
 		end
 	end
 end
-tune_syms()
+-- tune_syms()
 
 function remove_syms()
 	for n = 1, #ji_ratios do
@@ -120,6 +121,7 @@ function init()
 	end)
 	tune_syms()
 	engine.symAmp(0.1)
+	engine.symDecay(3)
 end
 
 function bend_voices(bend)
@@ -142,11 +144,11 @@ function m.event(data)
 		elseif message.cc == 18 then -- left
 			-- print('down', message.val)
 			local bend = message.val / 126 -- weird, but that's the maximum Touche seems to send
-			bend_voices(-bend * 2)
+			bend_voices(-bend * 2.5)
 		elseif message.cc == 19 then -- right
 			-- print('up', message.val)
 			local bend = message.val / 126
-			bend_voices(bend * 2)
+			bend_voices(bend * 2.5)
 		else
 			tab.print(message)
 		end
