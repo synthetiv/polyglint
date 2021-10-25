@@ -121,7 +121,9 @@ function init()
 	end)
 	tune_syms()
 	engine.symAmp(0.1)
-	engine.symDecay(3)
+	engine.symDecay(5)
+	engine.symCutoff(12000)
+	engine.symRQ(1)
 end
 
 function bend_voices(bend)
@@ -138,9 +140,10 @@ function m.event(data)
 	local message = midi.to_msg(data)
 	if message.type == 'cc' then
 		if message.cc == 16 then -- back
-			engine.mod(message.val * 1.9 / 127)
+			engine.mod((0.3 + message.val * 1.5) / 127)
 		elseif message.cc == 17 then -- front
-			engine.amp(message.val / 8 / 127)
+			local amp = message.val / 8 / 127
+			engine.amp(math.pow(amp, 1.3))
 		elseif message.cc == 18 then -- left
 			-- print('down', message.val)
 			local bend = message.val / 126 -- weird, but that's the maximum Touche seems to send

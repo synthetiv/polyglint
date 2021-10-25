@@ -1,6 +1,6 @@
 Engine_PolyGlint : CroneEngine {
 
-	classvar maxNumVoices = 16;
+	classvar maxNumVoices = 32;
 
 	var <glintGroup;
 	var <symGroup;
@@ -11,6 +11,10 @@ Engine_PolyGlint : CroneEngine {
 
 	var <voices;
 	var <symStrings;
+
+	var <paramDef;
+	var <glintDef;
+	var <symDef;
 
 	*new { arg context, callback;
 		^super.new(context, callback);
@@ -30,13 +34,15 @@ Engine_PolyGlint : CroneEngine {
 			\voiceAttack -> Bus.control,
 			\voiceRelease -> Bus.control,
 			\symAmp -> Bus.control,
-			\symDecay -> Bus.control
+			\symDecay -> Bus.control,
+			\symCutoff -> Bus.control,
+			\symRQ -> Bus.control
 		);
 
 		voices = Dictionary.new;
 		symStrings = Dictionary.new;
 
-		SynthDef.new(\glintParams, {
+		paramDef = SynthDef.new(\glintParams, {
 			arg amp = 0,
 				mod = 0,
 				bend = 0,
@@ -48,17 +54,21 @@ Engine_PolyGlint : CroneEngine {
 				voiceRelease = 0.1,
 				bendLag = 0.1,
 				symAmp = 0.2,
-				symDecay = 1;
+				symDecay = 1,
+				symCutoff = 10000,
+				symRQ = 1.5
 			Out.kr(ctlBus[\amp], LagUD.kr(amp, ampAttack, ampRelease));
 			Out.kr(ctlBus[\mod], LagUD.kr(mod, modAttack, modRelease));
 			Out.kr(ctlBus[\voiceAttack], voiceAttack);
 			Out.kr(ctlBus[\voiceRelease], voiceRelease);
 			Out.kr(ctlBus[\bend], 2.pow(Lag.kr(bend, bendLag)));
-			Out.kr(ctlBus[\symDecay], symDecay);
 			Out.kr(ctlBus[\symAmp], symAmp);
+			Out.kr(ctlBus[\symDecay], symDecay);
+			Out.kr(ctlBus[\symCutoff], symCutoff);
+			Out.kr(ctlBus[\symRQ], symRQ);
 		}).send;
 
-		SynthDef.new(\glint, {
+		glintDef = SynthDef.new(\glint, {
 			arg out,
 				hz = 220,
 				pan = 0,
@@ -71,14 +81,18 @@ Engine_PolyGlint : CroneEngine {
 			Out.ar(out, Pan2.ar(output, pan));
 		}).send;
 
-		SynthDef.new(\symString, {
+		symDef = SynthDef.new(\symString, {
 			arg out,
 				hz = 220,
 				pan = 0;
 			var delay = hz.reciprocal;
 			var fbGain = -60.dbamp ** (delay / In.kr(ctlBus[\symDecay]));
-			var fbInput = fbGain * LocalIn.ar;
-			var strInput = (RLPF.ar(In.ar(glintBus) * In.kr(ctlBus[\symAmp]) + fbInput, 10000)).softclip;
+			var fbInput = LeakDC.ar(fbGain * LocalIn.ar);
+			var strInput = RLPF.ar(
+				In.ar(glintBus) * In.kr(ctlBus[\symAmp]) + fbInput,
+				In.kr(ctlBus[\symCutoff]),
+				In.kr(ctlBus[\symRQ])
+			).softclip;
 			var str = DelayL.ar(strInput, 0.1, delay - ControlDur.ir);
 			LocalOut.ar(str);
 			Out.ar(out, Pan2.ar(DelayN.ar(str, ControlDur.ir, ControlDur.ir), pan));
@@ -87,6 +101,17 @@ Engine_PolyGlint : CroneEngine {
 		context.server.sync;
 
 		paramSynth = Synth.new(\glintParams);
+
+		// TODO: this doesn't work -- why? scope? `this`?
+		/*
+		paramDef.allControlNames.do({
+			arg ctl;
+			this.addCommand(ctl.asSymbol, "f", {
+				arg msg;
+				paramSynth.set(ctl.asSymbol, msg[1]);
+			});
+		});
+		*/
 
 		this.addCommand(\amp, "f", {
 			arg msg;
@@ -111,6 +136,16 @@ Engine_PolyGlint : CroneEngine {
 		this.addCommand(\symDecay, "f", {
 			arg msg;
 			paramSynth.set(\symDecay, msg[1]);
+		});
+
+		this.addCommand(\symCutoff, "f", {
+			arg msg;
+			paramSynth.set(\symCutoff, msg[1]);
+		});
+
+		this.addCommand(\symRQ, "f", {
+			arg msg;
+			paramSynth.set(\symRQ, msg[1]);
 		});
 
 		// TODO: a/r params
