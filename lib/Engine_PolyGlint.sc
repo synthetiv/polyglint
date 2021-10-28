@@ -56,7 +56,7 @@ Engine_PolyGlint : CroneEngine {
 				symAmp = 0.2,
 				symDecay = 1,
 				symCutoff = 10000,
-				symRQ = 1.5
+				symRQ = 1.5;
 			Out.kr(ctlBus[\amp], LagUD.kr(amp, ampAttack, ampRelease));
 			Out.kr(ctlBus[\mod], LagUD.kr(mod, modAttack, modRelease));
 			Out.kr(ctlBus[\voiceAttack], voiceAttack);
