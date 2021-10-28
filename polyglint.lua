@@ -138,8 +138,14 @@ function tune_syms()
 			local detune = 0 -- math.random() - 0.5
 			local hz = root_freq * math.pow(1.1, detune) * math.pow(2, o - 3) * ji_ratios[n]
 			local pan = (2 - o) - (n - 1) / (#ji_ratios - 1)
-			print('sym string', hz, pan)
-			engine.sym(n + o * #ji_ratios, hz, pan)
+			-- sympathize only with notes in the scale above
+			-- TODO: try tuning sym strings only to undertones, or primarily to undertones...?
+			-- overtones will resonate regardless...
+			if n ~= 3 and n ~= 4 and n ~= 6 and n ~= 9 and n ~= 11 then
+				engine.sym(n + o * #ji_ratios, hz, pan)
+			else
+				engine.sym(n + o * #ji_ratios, 0)
+			end
 		end
 	end
 end
