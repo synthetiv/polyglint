@@ -11,22 +11,30 @@ voices = Voice.new(16)
 grid_octave = 3
 keys_held = {}
 
-ji_ratios = {
-	1,
-	49/48, -- 7*7/3
-	21/20, -- 7*3/5
-	7/6,   -- 7/3
-	6/5,   -- 3/5
-	4/3,   --  /3
-	7/5,   --
-	3/2,   -- 3
-	49/32, -- 7*7
-	8/5,   --  /5
-	7/4,   -- 7
-	16/9   --  /3/3
+function calculate_ji_ratios()
+	ji_ratios = {}
+	for i, name in ipairs(ji_names) do
+		ji_ratios[i] = load('return ' .. name)()
+	end
+end
+
+--[[ earlier version based around what is now the 5th
+ji_names = {
+	'1/1',
+	'49/48', -- 7*7/3
+	'21/20', -- 7*3/5
+	'7/6',   -- 7/3
+	'6/5',   -- 3/5
+	'4/3',   --  /3
+	'7/5',   --
+	'3/2',   -- 3
+	'49/32', -- 7*7
+	'8/5',   --  /5
+	'7/4',   -- 7
+	'16/9'   --  /3/3
 }
 root_midi_note = 49
-root_freq = musicutil.note_num_to_freq(root_midi_note)
+--]]
 
 -- a magic chord:
 -- ratio  factors (incl. octaves)
@@ -91,6 +99,39 @@ root_freq = musicutil.note_num_to_freq(root_midi_note)
 -- 3/2
 -- a2/1
 
+-- recentered around the 4th of the above scale
+ji_names = {
+	'1/1',     -- 1
+	'21/20',   -- 7*3/5
+	'9/8',     -- 3*3
+	'147/128', -- 7*7*3
+	'6/5',     -- 3/5
+	'21/16',   -- 7*3
+	'4/3',     --  /3
+	'3/2',     -- 3
+	'49/32',   -- 7*7
+	'63/40',   -- 7*3*3/5
+	'7/4',     -- 7
+	'9/5'      -- 3*3/5
+	-- hm, I wonder how 63/32 sounds...
+}
+root_midi_note = 49 + 5
+root_freq = musicutil.note_num_to_freq(49 + 12 * (math.log(4/3) / math.log(2)))
+calculate_ji_ratios()
+
+-- a pleasant scale from the above:
+-- '1/1',     -- 1
+-- '21/20',   -- 7*3/5
+-- '6/5',     -- 3/5
+-- '4/3',     --  /3
+-- '3/2',     -- 3
+-- '63/40',   -- 7*3*3/5
+-- '9/5'      -- 3*3/5
+-- not one I would have come up with without hearing it, probably. heavily based on 6/5 minor 3rd,
+-- with 7s thrown in just for flat min 2nd and flat maj 6th
+--
+-- but you can also play those 3rds/6ths/7ths together with adjacent pitches for some nice warbling
+
 function tune_syms()
 	for n = 1, #ji_ratios do
 		for o = 1, 2 do
@@ -113,9 +154,10 @@ function remove_syms()
 end
 
 function init()
-	grid_clock = clock.run(function()
+	redraw_clock = clock.run(function()
 		while true do
 			clock.sleep(1/15)
+			redraw()
 			grid_redraw()
 		end
 	end)
@@ -158,7 +200,33 @@ function m.event(data)
 	end
 end
 
+-- TODO: pan/zoom around to center currently pressed keys and maximize space between drawn ratios
+function redraw()
+	screen.clear()
+	screen.level(10)
+	for x = 1, g.cols do
+		for y = 1, g.rows do
+			if keys_held[get_grid_key_id(x, y)] then
+				local note = get_grid_note(x, y)
+				local pitch_class = get_pitch_class_and_octave(note)
+				screen.move(x * 8, y * 8)
+				screen.text_center(ji_names[pitch_class + 1])
+			end
+		end
+	end
+	screen.update()
+end
+
 function grid_redraw()
+	g:all(0)
+	for x = 1, g.cols do
+		for y = 1, g.rows do
+			if keys_held[get_grid_key_id(x, y)] then
+				g:led(x, y, 7)
+			end
+		end
+	end
+	g:refresh()
 end
 
 function get_grid_note(x, y)
@@ -213,7 +281,7 @@ function g.key(x, y, z)
 end
 
 function cleanup()
-	if grid_clock ~= nil then
-		clock.cancel(grid_clock)
+	if redraw_clock ~= nil then
+		clock.cancel(redraw_clock)
 	end
 end
